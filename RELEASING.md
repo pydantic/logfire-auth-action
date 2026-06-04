@@ -45,7 +45,13 @@ It pushes to `origin`; override with `RELEASE_REMOTE=<remote>`. The script refus
 gh release create v1.2.3 --generate-notes --title v1.2.3
 ```
 
-To list it on the GitHub Marketplace, edit the release in the GitHub UI and tick **"Publish this Action to the GitHub Marketplace"** (requires `action.yml` with a unique `name` and a `branding` block — both present).
+To also list it on the GitHub Marketplace, publish the release through the web form with the `&marketplace=true` query param instead — it pre-ticks **"Publish this Action to the GitHub Marketplace"**, and you can click **Generate release notes** in the UI (requires `action.yml` with a unique `name` and a `branding` block — both present):
+
+```bash
+open "https://github.com/pydantic/logfire-auth-action/releases/new?tag=v1.2.3&marketplace=true"
+```
+
+(Already created the release via the CLI above? Edit it and append `&marketplace=true` to the edit URL to surface the same checkbox.)
 
 ## First release (`v1.0.0`)
 
@@ -57,7 +63,7 @@ pnpm run release
 gh release create v1.0.0 --generate-notes --title v1.0.0
 ```
 
-After this, `uses: pydantic/logfire-auth-action@v1` works.
+After this, `uses: pydantic/logfire-auth-action@v1` works. To list it on the Marketplace, publish `v1.0.0` via the web form with `&marketplace=true` (see [Cut a release](#cut-a-release)).
 
 ## Cutting a new major (`v2`)
 
