@@ -1,6 +1,6 @@
 {
   "name": "@pydantic/logfire-auth-action",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Authenticate GitHub Actions with Logfire via OIDC token exchange (RFC 8693)",
   "author": "Pydantic Services Inc.",

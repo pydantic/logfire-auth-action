@@ -216,7 +216,7 @@ function debug(message) {
 
 // package.json
 var name = "@pydantic/logfire-auth-action";
-var version = "1.0.1";
+var version = "1.0.2";
 
 // src/version.ts
 var shortName = name.replace(/^@[^/]+\//, "");
