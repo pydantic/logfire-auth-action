@@ -76,19 +76,8 @@ function makeRequest(targetUrl, options, body, proxyUrl, timeoutMs) {
   return new Promise((resolve, reject) => {
     const target = new URL(targetUrl);
     const isHttps = target.protocol === "https:";
-    let done = false;
-    const succeed = (r) => {
-      if (!done) {
-        done = true;
-        resolve(r);
-      }
-    };
-    const fail = (e) => {
-      if (!done) {
-        done = true;
-        reject(e);
-      }
-    };
+    const succeed = resolve;
+    const fail = reject;
     const onResponse = (res) => {
       let data = "";
       res.setEncoding("utf8");

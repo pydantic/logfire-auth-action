@@ -124,19 +124,10 @@ export function makeRequest(
   return new Promise<HttpResponse>((resolve, reject) => {
     const target = new URL(targetUrl);
     const isHttps = target.protocol === 'https:';
-    let done = false;
-    const succeed = (r: HttpResponse) => {
-      if (!done) {
-        done = true;
-        resolve(r);
-      }
-    };
-    const fail = (e: Error) => {
-      if (!done) {
-        done = true;
-        reject(e);
-      }
-    };
+    // resolve/reject are idempotent once the promise settles, so the first of
+    // response-end / error / timeout wins — no explicit "settled" guard needed.
+    const succeed = resolve;
+    const fail = reject;
 
     const onResponse = (res: http.IncomingMessage) => {
       let data = '';
