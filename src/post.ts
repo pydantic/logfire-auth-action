@@ -9,6 +9,7 @@
 
 import { requestWithRetry } from './http-client';
 import { getState, warning, debug } from './actions';
+import { USER_AGENT } from './version';
 
 export async function revokeToken(revokeUrl: string, token: string): Promise<boolean> {
   const formBody = new URLSearchParams({
@@ -21,6 +22,7 @@ export async function revokeToken(revokeUrl: string, token: string): Promise<boo
     {
       method: 'POST',
       headers: {
+        'User-Agent': USER_AGENT,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(formBody),
       },

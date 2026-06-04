@@ -43,6 +43,7 @@ describe('post() — token revocation cleanup', () => {
     let revokeBody: Record<string, string> = {};
     const scope = nock('https://logfire.test')
       .post('/api/oauth/revoke')
+      .matchHeader('user-agent', /^logfire-auth-action\/\d+\.\d+\.\d+$/)
       .reply(200, (_uri, body) => {
         revokeBody = parseForm(body);
         return '';

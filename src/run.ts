@@ -16,6 +16,7 @@
 import * as crypto from 'node:crypto';
 import { requestWithRetry, type RequestOpts } from './http-client';
 import { getInput, setOutput, saveState, setSecret, debug, info } from './actions';
+import { USER_AGENT } from './version';
 
 // --- RFC 8693 token exchange ---
 
@@ -55,6 +56,7 @@ export async function exchangeToken(
     {
       method: 'POST',
       headers: {
+        'User-Agent': USER_AGENT,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(formBody),
       },

@@ -208,21 +208,21 @@ async function requestWithRetry(url, options, body, opts = {}) {
 
 // src/actions.ts
 var fs = __toESM(require("node:fs"));
-function getInput(name) {
-  const val = process.env[`INPUT_${name.replace(/-/g, "_").toUpperCase()}`] || "";
+function getInput(name2) {
+  const val = process.env[`INPUT_${name2.replace(/-/g, "_").toUpperCase()}`] || "";
   return val.trim();
 }
-function setOutput(name, value) {
+function setOutput(name2, value) {
   const filePath = process.env.GITHUB_OUTPUT;
   if (filePath) {
-    fs.appendFileSync(filePath, `${name}=${value}
+    fs.appendFileSync(filePath, `${name2}=${value}
 `);
   }
 }
-function saveState(name, value) {
+function saveState(name2, value) {
   const filePath = process.env.GITHUB_STATE;
   if (filePath) {
-    fs.appendFileSync(filePath, `${name}=${value}
+    fs.appendFileSync(filePath, `${name2}=${value}
 `);
   }
 }
@@ -241,6 +241,14 @@ function debug(message) {
 function info(message) {
   console.log(message);
 }
+
+// package.json
+var name = "@pydantic/logfire-auth-action";
+var version = "1.0.1";
+
+// src/version.ts
+var shortName = name.replace(/^@[^/]+\//, "");
+var USER_AGENT = `${shortName}/${version}`;
 
 // src/run.ts
 var TOKEN_EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange";
@@ -261,6 +269,7 @@ async function exchangeToken(tokenUrl, { subjectToken, audience, scope }, httpOp
     {
       method: "POST",
       headers: {
+        "User-Agent": USER_AGENT,
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": Buffer.byteLength(formBody)
       }
