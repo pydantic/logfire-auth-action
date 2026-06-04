@@ -38,6 +38,13 @@ const vFull = `v${version}`;
 const vMajor = `v${major}`;
 const vMinor = `v${major}.${minor}`;
 
+// Repo slug ("owner/name") from package.json's `repository` for the Marketplace
+// publish URL. Accepts the "github:owner/name" shorthand or a full URL/string.
+const repoField = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository?.url || '';
+const repoSlug = (
+  repoField.match(/(?:github:|github\.com[/:])?([^/]+\/[^/]+?)(?:\.git)?$/)?.[1] || ''
+).replace(/\.git$/, '');
+
 // Refuse to release from a dirty tree (also ensures dist/ is committed).
 if (git(['status', '--porcelain'], { capture: true }).trim()) {
   fail('working tree is not clean — commit or stash changes first');
@@ -61,9 +68,16 @@ run(['tag', '-fa', vMinor, '-m', vFull]);
 run(['push', remote, vFull]);
 run(['push', remote, vMajor, vMinor, '--force']);
 
+const marketplaceUrl = repoSlug
+  ? `https://github.com/${repoSlug}/releases/new?tag=${vFull}&marketplace=true`
+  : '';
+
 console.log(
   dryRun
     ? '\nDry run — nothing pushed.'
     : `\nPushed ${vFull}, ${vMajor}, ${vMinor} to ${remote}.\n` +
-        `Publish notes with:  gh release create ${vFull} --generate-notes --title ${vFull}`,
+        `Publish notes with:  gh release create ${vFull} --generate-notes --title ${vFull}\n` +
+        (marketplaceUrl
+          ? `Or publish to the Marketplace (pre-ticks the listing checkbox):\n  ${marketplaceUrl}`
+          : ''),
 );
