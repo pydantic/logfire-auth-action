@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # GitHub Actions in our workflows — keeps the SHA pins (and their version
+  # comments) current. Grouped into one PR to limit noise.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+
+  # Dev dependencies (pnpm). The Action ships zero runtime deps, so everything
+  # here is devDependencies — bundler, typechecker, test/lint tooling.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      dev-dependencies:
+        patterns: ['*']
+    commit-message:
+      prefix: deps
