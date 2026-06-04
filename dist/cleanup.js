@@ -204,8 +204,8 @@ async function requestWithRetry(url, options, body, opts = {}) {
 }
 
 // src/actions.ts
-function getState(name) {
-  return (process.env[`STATE_${name}`] || "").trim();
+function getState(name2) {
+  return (process.env[`STATE_${name2}`] || "").trim();
 }
 function warning(message) {
   console.log(`::warning::${message}`);
@@ -213,6 +213,14 @@ function warning(message) {
 function debug(message) {
   console.log(`::debug::${message}`);
 }
+
+// package.json
+var name = "@pydantic/logfire-auth-action";
+var version = "1.0.1";
+
+// src/version.ts
+var shortName = name.replace(/^@[^/]+\//, "");
+var USER_AGENT = `${shortName}/${version}`;
 
 // src/post.ts
 async function revokeToken(revokeUrl, token) {
@@ -225,6 +233,7 @@ async function revokeToken(revokeUrl, token) {
     {
       method: "POST",
       headers: {
+        "User-Agent": USER_AGENT,
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": Buffer.byteLength(formBody)
       }
