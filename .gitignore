@@ -1,0 +1,9 @@
+node_modules/
+coverage/
+*.log
+*.pem
+.DS_Store
+.env
+.claude/
+
+# dist/ is intentionally committed — it is what the Action runs.
