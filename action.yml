@@ -1,6 +1,6 @@
 name: 'Authenticate to Logfire'
 author: 'Pydantic Services Inc.'
-description: 'Authenticate GitHub Actions with Logfire via OIDC token exchange (RFC 8693). No secrets needed — GitHub-issued JWTs are exchanged for a short-lived Logfire workload token whose scopes are pinned by your trust policy. The token is automatically revoked when the job completes.'
+description: 'Authenticate GitHub Actions to Logfire via OIDC token exchange (RFC 8693) — no secrets, short-lived auto-revoked tokens.'
 branding:
   icon: 'lock'
   color: 'purple'
