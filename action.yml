@@ -48,14 +48,20 @@ outputs:
     description: 'Short-lived Logfire workload access token (JWT). Use it as a bearer token for the API, OTLP intake, gateway proxy, etc. — scopes are determined by the trust policy.'
   traceparent:
     description: 'W3C traceparent header value linking to this workflow run'
-  trace-id:
+  trace_id:
     description: 'Trace ID for this workflow run (deterministic from run context)'
-  expires-in:
+  expires_in:
     description: 'Token TTL in seconds (set by the trust policy)'
   scopes:
     description: 'Granted scopes (may be narrower than requested if the policy narrows them)'
-  logfire-url:
+  logfire_url:
     description: 'Resolved Logfire API URL'
+  trace-id:
+    description: 'Deprecated alias for "trace_id". Will be removed in v2.'
+  expires-in:
+    description: 'Deprecated alias for "expires_in". Will be removed in v2.'
+  logfire-url:
+    description: 'Deprecated alias for "logfire_url". Will be removed in v2.'
 
 runs:
   using: 'node24'

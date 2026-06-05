@@ -244,7 +244,7 @@ function info(message) {
 
 // package.json
 var name = "@pydantic/logfire-auth-action";
-var version = "1.0.2";
+var version = "1.1.0";
 
 // src/version.ts
 var shortName = name.replace(/^@[^/]+\//, "");
@@ -380,6 +380,7 @@ async function run() {
   const region = getInput("region");
   const url = getInput("url");
   const resolvedUrl = resolveUrl(region, url);
+  setOutput("logfire_url", resolvedUrl);
   setOutput("logfire-url", resolvedUrl);
   debug(`Resolved Logfire URL: ${resolvedUrl}`);
   const httpOpts = readHttpOpts();
@@ -390,6 +391,7 @@ async function run() {
   const jobSpanId = computeJobSpanId(runId, runAttempt, jobId);
   const traceparent = `00-${traceId}-${jobSpanId}-01`;
   setOutput("traceparent", traceparent);
+  setOutput("trace_id", traceId);
   setOutput("trace-id", traceId);
   debug(`Traceparent: ${traceparent}`);
   const { oidcAudience, exchangeAudience } = resolveAudience({
@@ -411,6 +413,7 @@ async function run() {
   const grantedScopes = result.scope || "";
   setSecret(accessToken);
   setOutput("token", accessToken);
+  setOutput("expires_in", String(expiresIn));
   setOutput("expires-in", String(expiresIn));
   setOutput("scopes", grantedScopes);
   const skipCleanup = getInput("skip-cleanup").toLowerCase() === "true";
