@@ -251,11 +251,16 @@ describe('run() — full OIDC → exchange flow', () => {
 
     const outputs = readKv(outputFile);
     expect(outputs.token).toBe('WORKLOAD-TOKEN');
-    expect(outputs['expires-in']).toBe('600');
+    expect(outputs['expires_in']).toBe('600');
     expect(outputs.scopes).toBe('project:write_otlp');
+    expect(outputs['logfire_url']).toBe('https://logfire.test');
+    expect(outputs['trace_id']).toBe(computeTraceId('100', '1'));
+    expect(outputs.traceparent).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
+
+    // Deprecated dash-separated aliases mirror the underscore outputs (removed in v2).
+    expect(outputs['expires-in']).toBe('600');
     expect(outputs['logfire-url']).toBe('https://logfire.test');
     expect(outputs['trace-id']).toBe(computeTraceId('100', '1'));
-    expect(outputs.traceparent).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/);
 
     const state = readKv(stateFile);
     expect(state.access_token).toBe('WORKLOAD-TOKEN');
@@ -313,7 +318,7 @@ describe('run() — full OIDC → exchange flow', () => {
     await run();
 
     // runId '' and runAttempt default '1'.
-    expect(readKv(outputFile)['trace-id']).toBe(computeTraceId('', '1'));
+    expect(readKv(outputFile)['trace_id']).toBe(computeTraceId('', '1'));
   });
 
   it('derives an empty job id when neither job-id nor GITHUB_JOB is set', async () => {

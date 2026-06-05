@@ -25,7 +25,7 @@ jobs:
       - run: pytest --logfire
         env:
           LOGFIRE_TOKEN: ${{ steps.logfire.outputs.token }}
-          LOGFIRE_BASE_URL: ${{ steps.logfire.outputs.logfire-url }}
+          LOGFIRE_BASE_URL: ${{ steps.logfire.outputs.logfire_url }}
           TRACEPARENT: ${{ steps.logfire.outputs.traceparent }}
 ```
 
@@ -66,10 +66,13 @@ Token TTL is fixed by the trust policy (`token_ttl_seconds`). The action cannot 
 | ------------- | ----------------------------------------------- |
 | `token`       | Short-lived Logfire workload JWT                |
 | `traceparent` | W3C traceparent header value                    |
-| `trace-id`    | Deterministic trace ID for this workflow run    |
-| `expires-in`  | Token TTL in seconds (set by the trust policy)  |
+| `trace_id`    | Deterministic trace ID for this workflow run    |
+| `expires_in`  | Token TTL in seconds (set by the trust policy)  |
 | `scopes`      | Granted scopes (may be narrower than requested) |
-| `logfire-url` | Resolved Logfire API URL                        |
+| `logfire_url` | Resolved Logfire API URL                        |
+
+The dash-separated aliases `trace-id`, `expires-in`, and `logfire-url` are
+deprecated and will be removed in v2; prefer the underscore names above.
 
 ## Configuration Examples
 
@@ -173,7 +176,7 @@ If the trust policy grants `project:gateway_proxy`, the same workload token auth
     scopes: project:gateway_proxy
 
 - run: |
-    curl -sf "${{ steps.logfire.outputs.logfire-url }}/proxy/openai/v1/chat/completions" \
+    curl -sf "${{ steps.logfire.outputs.logfire_url }}/proxy/openai/v1/chat/completions" \
       -H "Authorization: Bearer ${{ steps.logfire.outputs.token }}" \
       -H 'Content-Type: application/json' \
       -d '{"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "ping"}]}'
@@ -209,7 +212,7 @@ jobs:
       - run: pytest --logfire
         env:
           LOGFIRE_TOKEN: ${{ steps.logfire.outputs.token }}
-          LOGFIRE_BASE_URL: ${{ steps.logfire.outputs.logfire-url }}
+          LOGFIRE_BASE_URL: ${{ steps.logfire.outputs.logfire_url }}
           TRACEPARENT: ${{ steps.logfire.outputs.traceparent }}
 ```
 

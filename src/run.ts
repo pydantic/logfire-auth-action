@@ -236,6 +236,8 @@ export async function run(): Promise<void> {
   const url = getInput('url');
   const resolvedUrl = resolveUrl(region, url);
 
+  setOutput('logfire_url', resolvedUrl);
+  // Deprecated dash-separated alias; remove in v2.
   setOutput('logfire-url', resolvedUrl);
   debug(`Resolved Logfire URL: ${resolvedUrl}`);
 
@@ -252,6 +254,8 @@ export async function run(): Promise<void> {
   const traceparent = `00-${traceId}-${jobSpanId}-01`;
 
   setOutput('traceparent', traceparent);
+  setOutput('trace_id', traceId);
+  // Deprecated dash-separated alias; remove in v2.
   setOutput('trace-id', traceId);
   debug(`Traceparent: ${traceparent}`);
 
@@ -286,6 +290,8 @@ export async function run(): Promise<void> {
   setSecret(accessToken);
 
   setOutput('token', accessToken);
+  setOutput('expires_in', String(expiresIn));
+  // Deprecated dash-separated alias; remove in v2.
   setOutput('expires-in', String(expiresIn));
   setOutput('scopes', grantedScopes);
 
