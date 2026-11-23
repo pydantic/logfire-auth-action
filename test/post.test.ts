@@ -44,8 +44,8 @@ describe('post() — token revocation cleanup', () => {
     const scope = nock('https://logfire.test')
       .post('/api/oauth/revoke')
       .matchHeader('user-agent', /^logfire-auth-action\/\d+\.\d+\.\d+$/)
-      .reply(200, (_uri, body) => {
-        revokeBody = parseForm(body);
+      .reply(200, async (request: Request) => {
+        revokeBody = parseForm(await request.text());
         return '';
       });
 
@@ -62,9 +62,16 @@ describe('post() — token revocation cleanup', () => {
     process.env.STATE_logfire_url = 'https://logfire.test';
     process.env.STATE_skip_cleanup = 'true';
 
-    // No interceptor registered — if post() made a request, nock would throw.
-    await post();
+    // No interceptor is registered, so nock reports any request as a 'no match'.
+    const noMatch = vi.fn();
+    nock.emitter.on('no match', noMatch);
+    try {
+      await post();
+    } finally {
+      nock.emitter.off('no match', noMatch);
+    }
 
+    expect(noMatch).not.toHaveBeenCalled();
     expect(logs.some((l) => l.includes('skip-cleanup is set'))).toBe(true);
   });
 

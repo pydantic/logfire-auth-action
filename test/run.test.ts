@@ -233,8 +233,8 @@ describe('run() — full OIDC → exchange flow', () => {
     const exchange = nock('https://logfire.test')
       .post('/api/oauth/token')
       .matchHeader('user-agent', /^logfire-auth-action\/\d+\.\d+\.\d+$/)
-      .reply(200, (_uri, body) => {
-        exchangeBody = parseForm(body);
+      .reply(200, async (request: Request) => {
+        exchangeBody = parseForm(await request.text());
         return { access_token: 'WORKLOAD-TOKEN', expires_in: 600, scope: 'project:write_otlp' };
       });
 
