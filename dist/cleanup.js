@@ -214,6 +214,11 @@ function debug(message) {
   console.log(`::debug::${message}`);
 }
 
+// src/headers.ts
+function decodeHeaders(state) {
+  return state ? JSON.parse(state) : {};
+}
+
 // package.json
 var name = "@pydantic/logfire-auth-action";
 var version = "1.1.0";
@@ -223,7 +228,7 @@ var shortName = name.replace(/^@[^/]+\//, "");
 var USER_AGENT = `${shortName}/${version}`;
 
 // src/post.ts
-async function revokeToken(revokeUrl, token) {
+async function revokeToken(revokeUrl, token, extraHeaders = {}) {
   const formBody = new URLSearchParams({
     token,
     token_type_hint: "access_token"
@@ -233,6 +238,7 @@ async function revokeToken(revokeUrl, token) {
     {
       method: "POST",
       headers: {
+        ...extraHeaders,
         "User-Agent": USER_AGENT,
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": Buffer.byteLength(formBody)
@@ -261,7 +267,11 @@ async function post() {
     return;
   }
   try {
-    const ok = await revokeToken(`${logfireUrl}/api/oauth/revoke`, accessToken);
+    const ok = await revokeToken(
+      `${logfireUrl}/api/oauth/revoke`,
+      accessToken,
+      decodeHeaders(getState("headers"))
+    );
     if (ok) {
       debug("Revoked workload token");
     } else {

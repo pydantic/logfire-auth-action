@@ -54,6 +54,7 @@ Pass the action's outputs into the steps that need them — the action itself do
 | `max-retries`     | No       | `3`                   | Retry attempts for transient HTTP failures (network/timeout/408/429/5xx). `0` disables                                                                                             |
 | `request-timeout` | No       | `10`                  | Per-request socket timeout, in seconds                                                                                                                                             |
 | `proxy`           | No       | env                   | Proxy URL; falls back to `HTTPS_PROXY`/`HTTP_PROXY`/`NO_PROXY` env vars                                                                                                            |
+| `headers`         | No       | —                     | Extra HTTP headers for the Logfire requests, one `Name: value` per line. For an access proxy such as Cloudflare Access. See [Behind an access proxy](#behind-an-access-proxy)      |
 
 ¹ Required unless you provide a full `audience` that already encodes the org/project path.
 ² When `audience` is omitted, the GitHub OIDC JWT `aud` claim defaults to the resolved Logfire URL and the exchange audience is built as `{resolvedUrl}/{organization}[/{project}]`. When `audience` is provided it is used verbatim for both — `organization`/`project` must then be omitted.
@@ -246,6 +247,22 @@ Both the GitHub OIDC request and the Logfire token exchange (and the post-job re
     request-timeout: 20
     proxy: http://proxy.internal:8080
 ```
+
+### Behind an access proxy
+
+If an access proxy such as Cloudflare Access protects your Logfire instance, give the action the proxy's credentials in `headers`, one `Name: value` per line. The action sends them on the token exchange and on the post-job revocation. It does not send them to the GitHub OIDC endpoint. It masks every header value in the logs.
+
+```yaml
+- uses: pydantic/logfire-auth-action@v1
+  with:
+    url: https://logfire.example.com
+    organization: myorg
+    headers: |
+      CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+```
+
+`headers` cannot set `Authorization`, `Content-Length`, `Content-Type`, `Host`, `Proxy-Authorization` or `User-Agent`, because the action or Logfire uses them. The steps that use the issued token must send the same proxy headers. For example, set `custom_headers` in the Terraform provider.
 
 ## Prerequisites
 

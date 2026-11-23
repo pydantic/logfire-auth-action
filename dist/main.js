@@ -242,6 +242,62 @@ function info(message) {
   console.log(message);
 }
 
+// src/headers.ts
+var RESERVED_HEADERS = /* @__PURE__ */ new Set([
+  "authorization",
+  "content-length",
+  "content-type",
+  "host",
+  "proxy-authorization",
+  "user-agent"
+]);
+var HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
+function hasControlCharacter(value) {
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    if (code < 32 && code !== 9 || code === 127) return true;
+  }
+  return false;
+}
+function parseHeaders(input) {
+  const headers = {};
+  const seen = /* @__PURE__ */ new Set();
+  const lines = input.split(/\r?\n/);
+  for (const [index, rawLine] of lines.entries()) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const where = `Input "headers", line ${index + 1}`;
+    const colon = line.indexOf(":");
+    if (colon <= 0) {
+      throw new Error(`${where}: write the header as "Name: value"`);
+    }
+    const name2 = line.slice(0, colon).trim();
+    const value = line.slice(colon + 1).trim();
+    const key = name2.toLowerCase();
+    if (!HEADER_NAME.test(name2)) {
+      throw new Error(`${where}: "${name2}" is not a valid HTTP header name`);
+    }
+    if (RESERVED_HEADERS.has(key)) {
+      throw new Error(`${where}: "${name2}" is reserved, so you cannot set it`);
+    }
+    if (seen.has(key)) {
+      throw new Error(`${where}: "${name2}" is set more than once`);
+    }
+    if (!value) {
+      throw new Error(`${where}: "${name2}" has an empty value`);
+    }
+    if (hasControlCharacter(value)) {
+      throw new Error(`${where}: the value of "${name2}" contains a control character`);
+    }
+    seen.add(key);
+    headers[name2] = value;
+  }
+  return headers;
+}
+function encodeHeaders(headers) {
+  return Object.keys(headers).length ? JSON.stringify(headers) : "";
+}
+
 // package.json
 var name = "@pydantic/logfire-auth-action";
 var version = "1.1.0";
@@ -253,7 +309,7 @@ var USER_AGENT = `${shortName}/${version}`;
 // src/run.ts
 var TOKEN_EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange";
 var JWT_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
-async function exchangeToken(tokenUrl, { subjectToken, audience, scope }, httpOpts) {
+async function exchangeToken(tokenUrl, { subjectToken, audience, scope }, httpOpts, extraHeaders = {}) {
   const params = new URLSearchParams({
     grant_type: TOKEN_EXCHANGE_GRANT,
     subject_token: subjectToken,
@@ -269,6 +325,7 @@ async function exchangeToken(tokenUrl, { subjectToken, audience, scope }, httpOp
     {
       method: "POST",
       headers: {
+        ...extraHeaders,
         "User-Agent": USER_AGENT,
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": Buffer.byteLength(formBody)
@@ -384,6 +441,10 @@ async function run() {
   setOutput("logfire-url", resolvedUrl);
   debug(`Resolved Logfire URL: ${resolvedUrl}`);
   const httpOpts = readHttpOpts();
+  const extraHeaders = parseHeaders(getInput("headers"));
+  for (const value of Object.values(extraHeaders)) {
+    setSecret(value);
+  }
   const runId = process.env.GITHUB_RUN_ID || "";
   const runAttempt = process.env.GITHUB_RUN_ATTEMPT || "1";
   const jobId = getInput("job-id") || process.env.GITHUB_JOB || "";
@@ -406,7 +467,8 @@ async function run() {
   const result = await exchangeToken(
     `${resolvedUrl}/api/oauth/token`,
     { subjectToken, audience: exchangeAudience, scope },
-    httpOpts
+    httpOpts,
+    extraHeaders
   );
   const accessToken = result.access_token;
   const expiresIn = result.expires_in;
@@ -420,6 +482,7 @@ async function run() {
   saveState("access_token", accessToken);
   saveState("logfire_url", resolvedUrl);
   saveState("skip_cleanup", skipCleanup ? "true" : "");
+  saveState("headers", encodeHeaders(extraHeaders));
   info(
     `Logfire OIDC authentication successful (expires in ${expiresIn}s, scopes: ${grantedScopes})`
   );
