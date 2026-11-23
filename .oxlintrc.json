@@ -9,7 +9,10 @@
     "es2024": true
   },
   "rules": {
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }]
+    "no-undef": "error",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "typescript/ban-ts-comment": "error",
+    "typescript/no-explicit-any": "error"
   },
   "ignorePatterns": ["dist/**", "coverage/**"]
 }

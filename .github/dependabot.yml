@@ -21,5 +21,10 @@ updates:
     groups:
       dev-dependencies:
         patterns: ['*']
+    ignore:
+      # The action runs on node24 (action.yml), so the Node types stay on
+      # major version 24. Move both together.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: deps
