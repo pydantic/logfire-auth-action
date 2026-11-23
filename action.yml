@@ -43,7 +43,7 @@ inputs:
     description: 'Proxy URL (e.g. http://proxy.internal:8080) for reaching Logfire and GitHub OIDC. When omitted, the standard HTTPS_PROXY / HTTP_PROXY / NO_PROXY environment variables are honored.'
     required: false
   headers:
-    description: 'Extra HTTP headers for the Logfire token and revocation requests, one "Name: value" per line. Use them for an access proxy in front of Logfire, such as Cloudflare Access. The action masks the values and never sends them to GitHub. Authorization, Content-Length, Content-Type, Host, Proxy-Authorization and User-Agent are reserved.'
+    description: 'Extra HTTP headers for the Logfire token and revocation requests, one "Name: value" per line. Use them for an access proxy in front of Logfire, such as Cloudflare Access. Use secrets for the values, because GitHub logs the inputs before the action can mask them. The action never sends the headers to GitHub. Authorization, Content-Length, Content-Type, Host, Proxy-Authorization and User-Agent are reserved.'
     required: false
 
 outputs:

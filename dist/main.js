@@ -144,20 +144,25 @@ function makeRequest(targetUrl, options, body, proxyUrl, timeoutMs) {
         fail(new Error(`Proxy CONNECT to ${target.host} failed (HTTP ${res.statusCode})`));
         return;
       }
-      const servername = selectServername(options.servername, target.hostname);
-      const tunnelAgent = new https.Agent();
-      tunnelAgent.createConnection = (() => {
-        const tlsSocket = tls.connect({
-          socket,
-          servername,
-          ca: options.ca,
-          rejectUnauthorized: options.rejectUnauthorized
+      try {
+        const servername = selectServername(options.servername, target.hostname);
+        const tunnelAgent = new https.Agent();
+        tunnelAgent.createConnection = (() => {
+          const tlsSocket = tls.connect({
+            socket,
+            servername,
+            ca: options.ca,
+            rejectUnauthorized: options.rejectUnauthorized
+          });
+          tlsSocket.on("error", fail);
+          return tlsSocket;
         });
-        tlsSocket.on("error", fail);
-        return tlsSocket;
-      });
-      const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
-      wire(req);
+        const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
+        wire(req);
+      } catch (err) {
+        socket.destroy();
+        fail(err);
+      }
     });
     connectReq.end();
   });
@@ -226,23 +231,28 @@ function saveState(name2, value) {
 `);
   }
 }
+function issueCommand(command, data) {
+  const escaped = data.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  console.log(`::${command}::${escaped}`);
+}
 function setSecret(value) {
   if (value) {
-    console.log(`::add-mask::${value}`);
+    issueCommand("add-mask", value);
   }
 }
 function setFailed(message) {
-  console.log(`::error::${message}`);
+  issueCommand("error", message);
   process.exitCode = 1;
 }
 function debug(message) {
-  console.log(`::debug::${message}`);
+  issueCommand("debug", message);
 }
 function info(message) {
   console.log(message);
 }
 
 // src/headers.ts
+var import_node_http = require("node:http");
 var RESERVED_HEADERS = /* @__PURE__ */ new Set([
   "authorization",
   "content-length",
@@ -251,14 +261,6 @@ var RESERVED_HEADERS = /* @__PURE__ */ new Set([
   "proxy-authorization",
   "user-agent"
 ]);
-var HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
-function hasControlCharacter(value) {
-  for (const char of value) {
-    const code = char.charCodeAt(0);
-    if (code < 32 && code !== 9 || code === 127) return true;
-  }
-  return false;
-}
 function parseHeaders(input) {
   const headers = {};
   const seen = /* @__PURE__ */ new Set();
@@ -274,7 +276,9 @@ function parseHeaders(input) {
     const name2 = line.slice(0, colon).trim();
     const value = line.slice(colon + 1).trim();
     const key = name2.toLowerCase();
-    if (!HEADER_NAME.test(name2)) {
+    try {
+      (0, import_node_http.validateHeaderName)(name2);
+    } catch {
       throw new Error(`${where}: "${name2}" is not a valid HTTP header name`);
     }
     if (RESERVED_HEADERS.has(key)) {
@@ -286,8 +290,12 @@ function parseHeaders(input) {
     if (!value) {
       throw new Error(`${where}: "${name2}" has an empty value`);
     }
-    if (hasControlCharacter(value)) {
-      throw new Error(`${where}: the value of "${name2}" contains a control character`);
+    try {
+      (0, import_node_http.validateHeaderValue)(name2, value);
+    } catch {
+      throw new Error(
+        `${where}: the value of "${name2}" contains a character that HTTP does not allow, such as a control character or a character outside Latin-1`
+      );
     }
     seen.add(key);
     headers[name2] = value;

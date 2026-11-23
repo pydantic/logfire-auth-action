@@ -7,6 +7,8 @@
  * sends them to the GitHub OIDC endpoint.
  */
 
+import { validateHeaderName, validateHeaderValue } from 'node:http';
+
 /** Headers that the action sets, that carry Logfire or proxy credentials, or that route the request. */
 const RESERVED_HEADERS = new Set([
   'authorization',
@@ -16,18 +18,6 @@ const RESERVED_HEADERS = new Set([
   'proxy-authorization',
   'user-agent',
 ]);
-
-/** An RFC 9110 field name (`token`). */
-const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
-
-/** Return true if `value` has a control character other than horizontal tab, which RFC 9110 forbids. */
-function hasControlCharacter(value: string): boolean {
-  for (const char of value) {
-    const code = char.charCodeAt(0);
-    if ((code < 0x20 && code !== 0x09) || code === 0x7f) return true;
-  }
-  return false;
-}
 
 /**
  * Parse one `Name: value` header per line. Blank lines are ignored.
@@ -50,7 +40,9 @@ export function parseHeaders(input: string): Record<string, string> {
     const name = line.slice(0, colon).trim();
     const value = line.slice(colon + 1).trim();
     const key = name.toLowerCase();
-    if (!HEADER_NAME.test(name)) {
+    try {
+      validateHeaderName(name);
+    } catch {
       throw new Error(`${where}: "${name}" is not a valid HTTP header name`);
     }
     if (RESERVED_HEADERS.has(key)) {
@@ -62,8 +54,12 @@ export function parseHeaders(input: string): Record<string, string> {
     if (!value) {
       throw new Error(`${where}: "${name}" has an empty value`);
     }
-    if (hasControlCharacter(value)) {
-      throw new Error(`${where}: the value of "${name}" contains a control character`);
+    try {
+      validateHeaderValue(name, value);
+    } catch {
+      throw new Error(
+        `${where}: the value of "${name}" contains a character that HTTP does not allow, such as a control character or a character outside Latin-1`,
+      );
     }
     seen.add(key);
     headers[name] = value;

@@ -141,20 +141,25 @@ function makeRequest(targetUrl, options, body, proxyUrl, timeoutMs) {
         fail(new Error(`Proxy CONNECT to ${target.host} failed (HTTP ${res.statusCode})`));
         return;
       }
-      const servername = selectServername(options.servername, target.hostname);
-      const tunnelAgent = new https.Agent();
-      tunnelAgent.createConnection = (() => {
-        const tlsSocket = tls.connect({
-          socket,
-          servername,
-          ca: options.ca,
-          rejectUnauthorized: options.rejectUnauthorized
+      try {
+        const servername = selectServername(options.servername, target.hostname);
+        const tunnelAgent = new https.Agent();
+        tunnelAgent.createConnection = (() => {
+          const tlsSocket = tls.connect({
+            socket,
+            servername,
+            ca: options.ca,
+            rejectUnauthorized: options.rejectUnauthorized
+          });
+          tlsSocket.on("error", fail);
+          return tlsSocket;
         });
-        tlsSocket.on("error", fail);
-        return tlsSocket;
-      });
-      const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
-      wire(req);
+        const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
+        wire(req);
+      } catch (err) {
+        socket.destroy();
+        fail(err);
+      }
     });
     connectReq.end();
   });
@@ -207,11 +212,15 @@ async function requestWithRetry(url, options, body, opts = {}) {
 function getState(name2) {
   return (process.env[`STATE_${name2}`] || "").trim();
 }
+function issueCommand(command, data) {
+  const escaped = data.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  console.log(`::${command}::${escaped}`);
+}
 function warning(message) {
-  console.log(`::warning::${message}`);
+  issueCommand("warning", message);
 }
 function debug(message) {
-  console.log(`::debug::${message}`);
+  issueCommand("debug", message);
 }
 
 // src/headers.ts

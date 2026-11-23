@@ -250,7 +250,7 @@ Both the GitHub OIDC request and the Logfire token exchange (and the post-job re
 
 ### Behind an access proxy
 
-If an access proxy such as Cloudflare Access protects your Logfire instance, give the action the proxy's credentials in `headers`, one `Name: value` per line. The action sends them on the token exchange and on the post-job revocation. It does not send them to the GitHub OIDC endpoint. It masks every header value in the logs.
+If an access proxy such as Cloudflare Access protects your Logfire instance, give the action the proxy's credentials in `headers`, one `Name: value` per line. The action sends them on the token exchange and on the post-job revocation. It does not send them to the GitHub OIDC endpoint.
 
 ```yaml
 - uses: pydantic/logfire-auth-action@v1
@@ -261,6 +261,8 @@ If an access proxy such as Cloudflare Access protects your Logfire instance, giv
       CF-Access-Client-Id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 ```
+
+Take the header values from GitHub Actions secrets, as in the example. GitHub logs the evaluated `with:` inputs before the action starts, and it masks only values that it already knows are secret. The action masks each header value when it starts, which is too late for that log line. If an earlier step produces a credential, mask it in that step with `echo "::add-mask::$VALUE"` before you pass it to this action.
 
 `headers` cannot set `Authorization`, `Content-Length`, `Content-Type`, `Host`, `Proxy-Authorization` or `User-Agent`, because the action or Logfire uses them. The steps that use the issued token must send the same proxy headers. For example, set `custom_headers` in the Terraform provider.
 

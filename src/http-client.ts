@@ -207,20 +207,27 @@ export function makeRequest(
       // Agent whose createConnection returns the tunneled TLS socket (the
       // https-proxy-agent pattern). Forward the caller's TLS trust settings so
       // the tunneled connection verifies like a direct https request would.
-      const servername = selectServername(options.servername, target.hostname);
-      const tunnelAgent = new https.Agent();
-      tunnelAgent.createConnection = (() => {
-        const tlsSocket = tls.connect({
-          socket,
-          servername,
-          ca: options.ca,
-          rejectUnauthorized: options.rejectUnauthorized,
-        });
-        tlsSocket.on('error', fail);
-        return tlsSocket;
-      }) as typeof tunnelAgent.createConnection;
-      const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
-      wire(req);
+      // This listener runs outside the Promise executor, so a synchronous throw
+      // here, such as Node rejecting a header, would otherwise be uncaught.
+      try {
+        const servername = selectServername(options.servername, target.hostname);
+        const tunnelAgent = new https.Agent();
+        tunnelAgent.createConnection = (() => {
+          const tlsSocket = tls.connect({
+            socket,
+            servername,
+            ca: options.ca,
+            rejectUnauthorized: options.rejectUnauthorized,
+          });
+          tlsSocket.on('error', fail);
+          return tlsSocket;
+        }) as typeof tunnelAgent.createConnection;
+        const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
+        wire(req);
+      } catch (err) {
+        socket.destroy();
+        fail(err as Error);
+      }
     });
     connectReq.end();
   });

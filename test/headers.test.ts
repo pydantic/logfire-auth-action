@@ -59,12 +59,22 @@ describe('parseHeaders', () => {
     } catch (error) {
       message = (error as Error).message;
     }
-    expect(message).toMatch(/the value of "X-Bad" contains a control character/);
+    expect(message).toMatch(/the value of "X-Bad" contains a character that HTTP does not allow/);
     expect(message).not.toContain('cret');
   });
 
   it('rejects DEL in the value', () => {
-    expect(() => parseHeaders('X-Bad: a\x7fb')).toThrow(/contains a control character/);
+    expect(() => parseHeaders('X-Bad: a\x7fb')).toThrow(
+      /contains a character that HTTP does not allow/,
+    );
+  });
+
+  it('accepts Latin-1 and rejects characters outside it, without showing the value', () => {
+    expect(parseHeaders('X-Name: caf\u00e9')).toEqual({ 'X-Name': 'caf\u00e9' });
+    expect(() => parseHeaders('X-Price: 5\u20ac-secret')).toThrow(
+      /line 1: the value of "X-Price" contains a character that HTTP does not allow/,
+    );
+    expect(() => parseHeaders('X-Price: 5\u20ac-secret')).not.toThrow(/secret/);
   });
 });
 

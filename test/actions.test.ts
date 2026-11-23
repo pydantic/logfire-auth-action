@@ -37,6 +37,16 @@ describe('actions toolkit shims', () => {
     expect(() => saveState('k', 'v')).not.toThrow();
   });
 
+  it('setSecret encodes the value as the runner decodes it', () => {
+    setSecret('a%25b\r\nc%');
+    expect(logs).toEqual(['::add-mask::a%2525b%0D%0Ac%25']);
+  });
+
+  it('setFailed encodes a multi-line message', () => {
+    setFailed('first\nsecond');
+    expect(logs).toContain('::error::first%0Asecond');
+  });
+
   it('setSecret ignores an empty value', () => {
     setSecret('');
     expect(logs).toEqual([]);
