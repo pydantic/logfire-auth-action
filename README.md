@@ -262,7 +262,14 @@ If an access proxy such as Cloudflare Access protects your Logfire instance, giv
       CF-Access-Client-Secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 ```
 
-Take the header values from GitHub Actions secrets, as in the example. GitHub logs the evaluated `with:` inputs before the action starts, and it masks only values that it already knows are secret. The action masks each header value when it starts, which is too late for that log line. If an earlier step produces a credential, mask it in that step with `echo "::add-mask::$VALUE"` before you pass it to this action.
+Take the header values from GitHub Actions secrets, as in the example. GitHub logs the evaluated `with:` inputs before the action starts, and it masks only values that it already knows are secret. The action masks each header value when it starts, which is too late for that log line. If an earlier step produces a credential, mask it in that step before you pass it to this action. Use `core.setSecret` from `@actions/core` in a JavaScript step. In a shell step, encode the value first, because the runner decodes `%25`, `%0D` and `%0A` in the mask:
+
+```bash
+mask="${VALUE//'%'/%25}"
+mask="${mask//$'\r'/%0D}"
+mask="${mask//$'\n'/%0A}"
+echo "::add-mask::$mask"
+```
 
 `headers` cannot set `Authorization`, `Content-Length`, `Content-Type`, `Host`, `Proxy-Authorization` or `User-Agent`, because the action or Logfire uses them. The steps that use the issued token must send the same proxy headers. For example, set `custom_headers` in the Terraform provider.
 
