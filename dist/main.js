@@ -308,7 +308,7 @@ function encodeHeaders(headers) {
 
 // package.json
 var name = "@pydantic/logfire-auth-action";
-var version = "1.1.0";
+var version = "1.2.0";
 
 // src/version.ts
 var shortName = name.replace(/^@[^/]+\//, "");
