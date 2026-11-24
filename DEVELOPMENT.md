@@ -39,7 +39,7 @@ The entry shims (`main.ts`/`cleanup.ts`) are kept trivial so the logic in `run.t
 | `pnpm run test`                    | Run the Vitest suite once                      |
 | `pnpm run test:watch`              | Vitest in watch mode                           |
 | `pnpm run coverage`                | Tests with V8 coverage                         |
-| `pnpm run lint` / `lint:fix`       | ESLint (typescript-eslint)                     |
+| `pnpm run lint` / `lint:fix`       | oxlint (`.oxlintrc.json`)                      |
 | `pnpm run format` / `format:check` | Prettier write / check                         |
 | `pnpm run all`                     | lint → typecheck → test → bundle (mirrors CI)  |
 
