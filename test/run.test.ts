@@ -266,10 +266,51 @@ describe('run() — full OIDC → exchange flow', () => {
     expect(state.access_token).toBe('WORKLOAD-TOKEN');
     expect(state.logfire_url).toBe('https://logfire.test');
     expect(state.skip_cleanup).toBe('');
+    expect(state.headers).toBe('');
 
     // Both the subject token and the workload token are masked.
     expect(logs).toContain('::add-mask::header.payload.signature');
     expect(logs).toContain('::add-mask::WORKLOAD-TOKEN');
+  });
+
+  it('sends the extra headers to Logfire only, masks them, and saves them', async () => {
+    process.env.INPUT_ORGANIZATION = 'acme';
+    process.env.INPUT_URL = 'https://logfire.test';
+    process.env.INPUT_HEADERS = 'CF-Access-Client-Id: id.access\nCF-Access-Client-Secret: s3cret';
+
+    // `badheaders` makes nock refuse a request that carries these headers.
+    const oidc = nock('https://oidc.test', {
+      badheaders: ['cf-access-client-id', 'cf-access-client-secret'],
+    })
+      .get('/token')
+      .query(true)
+      .reply(200, { value: 'a.b.c' });
+    const exchange = nock('https://logfire.test')
+      .post('/api/oauth/token')
+      .matchHeader('cf-access-client-id', 'id.access')
+      .matchHeader('cf-access-client-secret', 's3cret')
+      .matchHeader('user-agent', /^logfire-auth-action\//)
+      .reply(200, { access_token: 'T', expires_in: 600 });
+
+    await run();
+
+    expect(oidc.isDone()).toBe(true);
+    expect(exchange.isDone()).toBe(true);
+    expect(logs).toContain('::add-mask::id.access');
+    expect(logs).toContain('::add-mask::s3cret');
+    expect(JSON.parse(readKv(stateFile).headers!)).toEqual({
+      'CF-Access-Client-Id': 'id.access',
+      'CF-Access-Client-Secret': 's3cret',
+    });
+  });
+
+  it('fails before any request when the headers input is invalid', async () => {
+    process.env.INPUT_ORGANIZATION = 'acme';
+    process.env.INPUT_URL = 'https://logfire.test';
+    process.env.INPUT_HEADERS = 'Authorization: Bearer x';
+
+    // No interceptor is registered, so this error can only come from the input check.
+    await expect(run()).rejects.toThrow(/"Authorization" is reserved/);
   });
 
   it('persists skip_cleanup when requested', async () => {

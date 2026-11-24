@@ -144,20 +144,25 @@ function makeRequest(targetUrl, options, body, proxyUrl, timeoutMs) {
         fail(new Error(`Proxy CONNECT to ${target.host} failed (HTTP ${res.statusCode})`));
         return;
       }
-      const servername = selectServername(options.servername, target.hostname);
-      const tunnelAgent = new https.Agent();
-      tunnelAgent.createConnection = (() => {
-        const tlsSocket = tls.connect({
-          socket,
-          servername,
-          ca: options.ca,
-          rejectUnauthorized: options.rejectUnauthorized
+      try {
+        const servername = selectServername(options.servername, target.hostname);
+        const tunnelAgent = new https.Agent();
+        tunnelAgent.createConnection = (() => {
+          const tlsSocket = tls.connect({
+            socket,
+            servername,
+            ca: options.ca,
+            rejectUnauthorized: options.rejectUnauthorized
+          });
+          tlsSocket.on("error", fail);
+          return tlsSocket;
         });
-        tlsSocket.on("error", fail);
-        return tlsSocket;
-      });
-      const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
-      wire(req);
+        const req = https.request(targetUrl, { ...options, agent: tunnelAgent }, onResponse);
+        wire(req);
+      } catch (err) {
+        socket.destroy();
+        fail(err);
+      }
     });
     connectReq.end();
   });
@@ -226,20 +231,79 @@ function saveState(name2, value) {
 `);
   }
 }
+function issueCommand(command, data) {
+  const escaped = data.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+  console.log(`::${command}::${escaped}`);
+}
 function setSecret(value) {
   if (value) {
-    console.log(`::add-mask::${value}`);
+    issueCommand("add-mask", value);
   }
 }
 function setFailed(message) {
-  console.log(`::error::${message}`);
+  issueCommand("error", message);
   process.exitCode = 1;
 }
 function debug(message) {
-  console.log(`::debug::${message}`);
+  issueCommand("debug", message);
 }
 function info(message) {
   console.log(message);
+}
+
+// src/headers.ts
+var import_node_http = require("node:http");
+var RESERVED_HEADERS = /* @__PURE__ */ new Set([
+  "authorization",
+  "content-length",
+  "content-type",
+  "host",
+  "proxy-authorization",
+  "user-agent"
+]);
+function parseHeaders(input) {
+  const headers = {};
+  const seen = /* @__PURE__ */ new Set();
+  const lines = input.split(/\r?\n/);
+  for (const [index, rawLine] of lines.entries()) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const where = `Input "headers", line ${index + 1}`;
+    const colon = line.indexOf(":");
+    if (colon <= 0) {
+      throw new Error(`${where}: write the header as "Name: value"`);
+    }
+    const name2 = line.slice(0, colon).trim();
+    const value = line.slice(colon + 1).trim();
+    const key = name2.toLowerCase();
+    try {
+      (0, import_node_http.validateHeaderName)(name2);
+    } catch {
+      throw new Error(`${where}: "${name2}" is not a valid HTTP header name`);
+    }
+    if (RESERVED_HEADERS.has(key)) {
+      throw new Error(`${where}: "${name2}" is reserved, so you cannot set it`);
+    }
+    if (seen.has(key)) {
+      throw new Error(`${where}: "${name2}" is set more than once`);
+    }
+    if (!value) {
+      throw new Error(`${where}: "${name2}" has an empty value`);
+    }
+    try {
+      (0, import_node_http.validateHeaderValue)(name2, value);
+    } catch {
+      throw new Error(
+        `${where}: the value of "${name2}" contains a character that HTTP does not allow, such as a control character or a character outside Latin-1`
+      );
+    }
+    seen.add(key);
+    headers[name2] = value;
+  }
+  return headers;
+}
+function encodeHeaders(headers) {
+  return Object.keys(headers).length ? JSON.stringify(headers) : "";
 }
 
 // package.json
@@ -253,7 +317,7 @@ var USER_AGENT = `${shortName}/${version}`;
 // src/run.ts
 var TOKEN_EXCHANGE_GRANT = "urn:ietf:params:oauth:grant-type:token-exchange";
 var JWT_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:jwt";
-async function exchangeToken(tokenUrl, { subjectToken, audience, scope }, httpOpts) {
+async function exchangeToken(tokenUrl, { subjectToken, audience, scope }, httpOpts, extraHeaders = {}) {
   const params = new URLSearchParams({
     grant_type: TOKEN_EXCHANGE_GRANT,
     subject_token: subjectToken,
@@ -269,6 +333,7 @@ async function exchangeToken(tokenUrl, { subjectToken, audience, scope }, httpOp
     {
       method: "POST",
       headers: {
+        ...extraHeaders,
         "User-Agent": USER_AGENT,
         "Content-Type": "application/x-www-form-urlencoded",
         "Content-Length": Buffer.byteLength(formBody)
@@ -384,6 +449,10 @@ async function run() {
   setOutput("logfire-url", resolvedUrl);
   debug(`Resolved Logfire URL: ${resolvedUrl}`);
   const httpOpts = readHttpOpts();
+  const extraHeaders = parseHeaders(getInput("headers"));
+  for (const value of Object.values(extraHeaders)) {
+    setSecret(value);
+  }
   const runId = process.env.GITHUB_RUN_ID || "";
   const runAttempt = process.env.GITHUB_RUN_ATTEMPT || "1";
   const jobId = getInput("job-id") || process.env.GITHUB_JOB || "";
@@ -406,7 +475,8 @@ async function run() {
   const result = await exchangeToken(
     `${resolvedUrl}/api/oauth/token`,
     { subjectToken, audience: exchangeAudience, scope },
-    httpOpts
+    httpOpts,
+    extraHeaders
   );
   const accessToken = result.access_token;
   const expiresIn = result.expires_in;
@@ -420,6 +490,7 @@ async function run() {
   saveState("access_token", accessToken);
   saveState("logfire_url", resolvedUrl);
   saveState("skip_cleanup", skipCleanup ? "true" : "");
+  saveState("headers", encodeHeaders(extraHeaders));
   info(
     `Logfire OIDC authentication successful (expires in ${expiresIn}s, scopes: ${grantedScopes})`
   );

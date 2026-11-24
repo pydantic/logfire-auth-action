@@ -16,6 +16,7 @@
 import * as crypto from 'node:crypto';
 import { requestWithRetry, type RequestOpts } from './http-client';
 import { getInput, setOutput, saveState, setSecret, debug, info } from './actions';
+import { encodeHeaders, parseHeaders } from './headers';
 import { USER_AGENT } from './version';
 
 // --- RFC 8693 token exchange ---
@@ -39,6 +40,7 @@ export async function exchangeToken(
   tokenUrl: string,
   { subjectToken, audience, scope }: ExchangeParams,
   httpOpts: RequestOpts,
+  extraHeaders: Record<string, string> = {},
 ): Promise<TokenResponse> {
   const params = new URLSearchParams({
     grant_type: TOKEN_EXCHANGE_GRANT,
@@ -56,6 +58,7 @@ export async function exchangeToken(
     {
       method: 'POST',
       headers: {
+        ...extraHeaders,
         'User-Agent': USER_AGENT,
         'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(formBody),
@@ -243,6 +246,13 @@ export async function run(): Promise<void> {
 
   const httpOpts = readHttpOpts();
 
+  // Mask the extra header values before any request, because they are usually
+  // access-proxy credentials.
+  const extraHeaders = parseHeaders(getInput('headers'));
+  for (const value of Object.values(extraHeaders)) {
+    setSecret(value);
+  }
+
   // 2. Compute traceparent. For matrix jobs, GITHUB_JOB collapses across matrix
   //    entries — incorporate `job-id` so each combination gets a unique span id.
   const runId = process.env.GITHUB_RUN_ID || '';
@@ -281,6 +291,7 @@ export async function run(): Promise<void> {
     `${resolvedUrl}/api/oauth/token`,
     { subjectToken, audience: exchangeAudience, scope },
     httpOpts,
+    extraHeaders,
   );
 
   const accessToken = result.access_token;
@@ -302,6 +313,7 @@ export async function run(): Promise<void> {
   saveState('access_token', accessToken);
   saveState('logfire_url', resolvedUrl);
   saveState('skip_cleanup', skipCleanup ? 'true' : '');
+  saveState('headers', encodeHeaders(extraHeaders));
 
   info(
     `Logfire OIDC authentication successful (expires in ${expiresIn}s, scopes: ${grantedScopes})`,

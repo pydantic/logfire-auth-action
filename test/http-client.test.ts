@@ -382,6 +382,24 @@ describe('requestWithRetry over a CONNECT proxy (TLS tunnel)', () => {
     proxy.close();
   });
 
+  it('rejects, and does not crash, when Node refuses a header inside the tunnel', async () => {
+    const proxy = http.createServer();
+    proxy.on('connect', (_req, clientSocket) => {
+      clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+    });
+    const proxyPort = await listen(proxy);
+
+    await expect(
+      requestWithRetry(
+        `https://example.invalid/`,
+        { method: 'GET', headers: { 'X-Price': '5\u20ac' } },
+        undefined,
+        { proxy: `http://127.0.0.1:${proxyPort}`, timeoutMs: 2000, maxRetries: 0 },
+      ),
+    ).rejects.toThrow(/Invalid character in header content \["X-Price"\]/);
+    proxy.close();
+  });
+
   it('rejects when the proxy refuses the CONNECT', async () => {
     const proxy = http.createServer();
     proxy.on('connect', (_req, clientSocket) => {
