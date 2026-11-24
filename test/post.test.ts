@@ -57,6 +57,23 @@ describe('post() — token revocation cleanup', () => {
     expect(logs).toContain('::debug::Revoked workload token');
   });
 
+  it('sends the extra headers that the main step saved', async () => {
+    process.env.STATE_access_token = 'WORKLOAD-TOKEN';
+    process.env.STATE_logfire_url = 'https://logfire.test';
+    process.env.STATE_headers = JSON.stringify({ 'CF-Access-Client-Id': 'id.access' });
+
+    const scope = nock('https://logfire.test')
+      .post('/api/oauth/revoke')
+      .matchHeader('cf-access-client-id', 'id.access')
+      .matchHeader('user-agent', /^logfire-auth-action\//)
+      .reply(200, '');
+
+    await post();
+
+    expect(scope.isDone()).toBe(true);
+    expect(logs).toContain('::debug::Revoked workload token');
+  });
+
   it('skips revocation when skip_cleanup is set (no network call)', async () => {
     process.env.STATE_access_token = 'WORKLOAD-TOKEN';
     process.env.STATE_logfire_url = 'https://logfire.test';

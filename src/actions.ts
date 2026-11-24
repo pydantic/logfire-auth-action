@@ -33,25 +33,34 @@ export function saveState(name: string, value: string): void {
   }
 }
 
+/**
+ * Write a workflow command. The runner decodes `%25`, `%0D` and `%0A` in the
+ * data, so the data is encoded the same way as `@actions/core` does it.
+ */
+function issueCommand(command: string, data: string): void {
+  const escaped = data.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+  console.log(`::${command}::${escaped}`);
+}
+
 /** Register a value to be masked in the logs. */
 export function setSecret(value: string): void {
   if (value) {
-    console.log(`::add-mask::${value}`);
+    issueCommand('add-mask', value);
   }
 }
 
 /** Mark the step failed (logs an error and sets a non-zero exit code). */
 export function setFailed(message: string): void {
-  console.log(`::error::${message}`);
+  issueCommand('error', message);
   process.exitCode = 1;
 }
 
 export function warning(message: string): void {
-  console.log(`::warning::${message}`);
+  issueCommand('warning', message);
 }
 
 export function debug(message: string): void {
-  console.log(`::debug::${message}`);
+  issueCommand('debug', message);
 }
 
 export function info(message: string): void {
