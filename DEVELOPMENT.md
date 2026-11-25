@@ -71,4 +71,4 @@ The CONNECT-tunnel suite generates a throwaway self-signed cert (`CN=localhost`,
 
 ## Releasing
 
-See [RELEASING.md](RELEASING.md) for the tag/version process — including the one-time first release that creates the `v1` tag the README references.
+See [RELEASING.md](RELEASING.md) for the tag/version process — including the one-time first release that creates the `v1.0.0` tag the README references.

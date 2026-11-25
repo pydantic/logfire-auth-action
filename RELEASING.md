@@ -1,6 +1,6 @@
 # Releasing
 
-This Action is consumed by tag: users write `uses: pydantic/logfire-auth-action@v1`. Releases are git tags plus moving **major** (`v1`) and **minor** (`v1.1`) tags that track the latest matching release, as [GitHub recommends](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/release-and-maintain-actions).
+This Action is consumed by tag: users write `uses: pydantic/logfire-auth-action@v1.2.0`, or `@v1` to follow the major line. Releases are git tags plus moving **major** (`v1`) and **minor** (`v1.1`) tags that track the latest matching release, as [GitHub recommends](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/release-and-maintain-actions).
 
 ## Dist model
 
@@ -14,7 +14,7 @@ Semantic versioning, `vMAJOR.MINOR.PATCH`:
 
 - **patch** (`v1.0.1`) — bug fix, no interface change.
 - **minor** (`v1.1.0`) — new input/output or behavior, backward compatible.
-- **major** (`v2.0.0`) — breaking change to inputs/outputs/behavior; cut a new `v2` line and bump the docs' `@vN` references.
+- **major** (`v2.0.0`) — breaking change to inputs/outputs/behavior; cut a new `v2` line.
 
 The `vN` and `vN.M` tags are aliases that move to the newest matching release, so `@v1` consumers get patches and features automatically without opting into breaking changes. Keep `package.json`'s `version` in lockstep with the tag.
 
@@ -53,9 +53,20 @@ open "https://github.com/pydantic/logfire-auth-action/releases/new?tag=v1.2.3&ma
 
 (Already created the release via the CLI above? Edit it and append `&marketplace=true` to the edit URL to surface the same checkbox.)
 
+## Bump the examples
+
+The examples in `README.md` pin this Action to the exact latest version (`uses: pydantic/logfire-auth-action@vX.Y.Z`). After every release, once the tag is pushed, update them to the new version and commit the change to `main`:
+
+```bash
+sed -i.bak -E 's|(pydantic/logfire-auth-action@)v[0-9]+\.[0-9]+\.[0-9]+|\1v1.2.3|' README.md && rm README.md.bak
+grep -n 'logfire-auth-action@' README.md   # every line shows the new version
+```
+
+Do this after the release, not before: the examples must never reference a tag that doesn't exist yet. The other actions in the examples (`actions/checkout`, `actions/setup-python`) are also pinned to exact versions, so bump them to their latest releases in the same commit.
+
 ## First release (`v1.0.0`)
 
-The new repository has no tags yet, so the `@v1` references in the README don't resolve until the first release. `package.json` is already at `1.0.0`, so:
+The new repository has no tags yet, so the `@v1.0.0` references in the README don't resolve until the first release. `package.json` is already at `1.0.0`, so:
 
 ```bash
 pnpm run all && [ -z "$(git status --porcelain)" ] || { echo "tree not clean / dist not current"; exit 1; }
@@ -63,16 +74,15 @@ pnpm run release
 gh release create v1.0.0 --generate-notes --title v1.0.0
 ```
 
-After this, `uses: pydantic/logfire-auth-action@v1` works. To list it on the Marketplace, publish `v1.0.0` via the web form with `&marketplace=true` (see [Cut a release](#cut-a-release)).
+After this, `uses: pydantic/logfire-auth-action@v1.0.0` (and `@v1`) works. To list it on the Marketplace, publish `v1.0.0` via the web form with `&marketplace=true` (see [Cut a release](#cut-a-release)).
 
 ## Cutting a new major (`v2`)
 
-For a breaking change, bump `version` to `2.0.0`, then `pnpm run release` (it creates `v2.0.0` and moves `v2`/`v2.0`). Preserve the previous major so it can still receive fixes, and update the docs:
+For a breaking change, bump `version` to `2.0.0`, then `pnpm run release` (it creates `v2.0.0` and moves `v2`/`v2.0`). Preserve the previous major so it can still receive fixes, then [bump the examples](#bump-the-examples) to `@v2.0.0`:
 
 ```bash
 git branch releases/v1 v1        # keep the old major maintainable
 git push -u origin releases/v1
-# then bump @v1 -> @v2 references in README.md
 ```
 
 ## Checklist
@@ -83,4 +93,4 @@ git push -u origin releases/v1
 - [ ] Version tag `vX.Y.Z` pushed
 - [ ] Major (`vN`) and minor (`vN.M`) aliases force-moved and pushed
 - [ ] GitHub Release published (notes generated)
-- [ ] Docs reference the right `@vN`
+- [ ] `README.md` examples bumped to the new `@vX.Y.Z` (after the tag is pushed)
