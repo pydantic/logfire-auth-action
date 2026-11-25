@@ -15,12 +15,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: logfire
-        uses: pydantic/logfire-auth-action@v1
+        uses: pydantic/logfire-auth-action@v1.2.0
         with:
           organization: myorg
           project: myapp
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.1
       - run: pip install -e ".[test]"
       - run: pytest --logfire
         env:
@@ -80,7 +80,7 @@ deprecated and will be removed in v2; prefer the underscore names above.
 ### Logfire Cloud (US — default)
 
 ```yaml
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: myapp
@@ -89,7 +89,7 @@ deprecated and will be removed in v2; prefer the underscore names above.
 ### Logfire Cloud (EU)
 
 ```yaml
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: myapp
@@ -99,7 +99,7 @@ deprecated and will be removed in v2; prefer the underscore names above.
 ### Self-Hosted Logfire
 
 ```yaml
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: myapp
@@ -111,7 +111,7 @@ When `audience` is omitted, the GitHub OIDC JWT's `aud` claim defaults to `url` 
 If your backend expects a different `aud` value (or a fully custom exchange audience), provide `audience` explicitly — but then it is used **verbatim** and must already encode the org/project path, so `organization`/`project` must be omitted:
 
 ```yaml
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     url: https://logfire.internal.company.com
     audience: https://logfire.internal.company.com/myorg/myapp
@@ -122,7 +122,7 @@ If your backend expects a different `aud` value (or a fully custom exchange audi
 The trust policy defines the upper bound. A workflow that only needs a subset can request just that:
 
 ```yaml
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: myapp
@@ -140,7 +140,7 @@ A platform team often wants **one** trust policy that admits the whole org's CI 
 
 ```yaml
 # Workflow A — narrowed to `frontend`
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: frontend
@@ -149,7 +149,7 @@ A platform team often wants **one** trust policy that admits the whole org's CI 
 
 ```yaml
 # Workflow B — same org, same trust policy, different project
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: backend
@@ -170,7 +170,7 @@ If the trust policy grants `project:gateway_proxy`, the same workload token auth
 
 ```yaml
 - id: logfire
-  uses: pydantic/logfire-auth-action@v1
+  uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: myapp
@@ -199,14 +199,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - id: logfire
-        uses: pydantic/logfire-auth-action@v1
+        uses: pydantic/logfire-auth-action@v1.2.0
         with:
           organization: myorg
           project: myapp
           job-id: ${{ github.job }}-${{ toJson(matrix) }}
 
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[test]"
@@ -239,7 +239,7 @@ Both the GitHub OIDC request and the Logfire token exchange (and the post-job re
 - **Proxy support** — set `proxy` explicitly, or rely on the standard `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` / `NO_PROXY` environment variables (Node's `https` ignores these by default). HTTPS targets are reached via a `CONNECT` tunnel.
 
 ```yaml
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     organization: myorg
     project: myapp
@@ -253,7 +253,7 @@ Both the GitHub OIDC request and the Logfire token exchange (and the post-job re
 If an access proxy such as Cloudflare Access protects your Logfire instance, give the action the proxy's credentials in `headers`, one `Name: value` per line. The action sends them on the token exchange and on the post-job revocation. It does not send them to the GitHub OIDC endpoint.
 
 ```yaml
-- uses: pydantic/logfire-auth-action@v1
+- uses: pydantic/logfire-auth-action@v1.2.0
   with:
     url: https://logfire.example.com
     organization: myorg
